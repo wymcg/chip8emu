@@ -134,7 +134,14 @@ impl Chip8 {
 
     /// Update the inputs
     pub fn change_input(&mut self, input: Input) {
-        // TODO implement
+        match input {
+            Input::Pressed(key) => {
+                self.registers.input |= 0x1 << key; // set the n-th bit to 1
+            }
+            Input::Unpressed(key) => {
+                self.registers.input &= !(0x1 << key) // set the n-th bit to 0
+            }
+        }
     }
 
     /// Do the next instruction and return the result, containing the opcode that was just dealt with
