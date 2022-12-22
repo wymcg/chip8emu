@@ -4,11 +4,14 @@ use crate::instructions::{Address, Immediate, Instruction, Register};
 use rand::{thread_rng, Rng};
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::time::Duration;
+use bevy::utils::Instant;
 
 const MEM_SIZE: usize = 4096;
 const STACK_SIZE: usize = 1024;
 const PROGMEM_START: u16 = 0x200;
 const FONTMEM_START: u16 = 0x000;
+const SIXTY_HZ_TIME: Duration = Duration::from_secs(1/60);
 
 pub const DISPLAY_WIDTH: usize = 64;
 pub const DISPLAY_HEIGHT: usize = 32;
@@ -37,9 +40,6 @@ struct Registers {
     /// In this implementation, the stack pointer is 16 bits.
     sp: u16,
 
-    /// The input register
-    /// Holds state of each of the input buttons
-    input: u16,
 }
 
 /// CHIP-8 Memory
@@ -57,9 +57,23 @@ pub struct Memory {
     vram: [[bool; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
 }
 
+pub struct InputState {
+    curr: u16,
+    prev: u16,
+}
+
 pub struct Chip8 {
+    /// The registers of the CHIP-8
     registers: Registers,
+
+    /// Memory such as RAM, the stack, and VRAM
     pub memory: Memory,
+
+    /// The current inputs, and the previous state of the input at the last cycle
+    input: InputState,
+
+    /// The time at the last time the timers were incremented
+    last_decrement: Instant,
 }
 
 impl Chip8 {
@@ -73,13 +87,17 @@ impl Chip8 {
                 i: 0,
                 pc: 0x200,
                 sp: 0,
-                input: 0,
             },
             memory: Memory {
                 ram: [0; MEM_SIZE],
                 stack: [0; STACK_SIZE],
                 vram: [[false; DISPLAY_WIDTH]; DISPLAY_HEIGHT],
             },
+            input: InputState {
+                curr: 0b0000_0000_0000_0000,
+                prev: 0b0000_0000_0000_0000,
+            },
+            last_decrement: Instant::now(),
         }
     }
 
@@ -134,19 +152,40 @@ impl Chip8 {
 
     /// Update the inputs
     pub fn change_input(&mut self, input: Input) {
+        // set the previous input
+        self.input.prev = self.input.curr;
+
+        // update the current input
         match input {
             Input::Pressed(key) => {
-                self.registers.input |= 0x1 << key; // set the n-th bit to 1
+                self.input.curr |= 0x1 << key; // set the n-th bit to 1
             }
             Input::Unpressed(key) => {
-                self.registers.input &= !(0x1 << key) // set the n-th bit to 0
+                self.input.curr &= !(0x1 << key) // set the n-th bit to 0
             }
         }
     }
 
     /// Do the next instruction and return the result, containing the opcode that was just dealt with
     pub fn do_next_instruction(&mut self) -> Result<u16, u16> {
+        // get the current opcode for returning results
         let current_opcode: u16 = self.get_current_opcode();
+
+        // decrement the timers, if enough time has passed since the last decrement
+        if self.last_decrement.elapsed() > SIXTY_HZ_TIME {
+            // decrement ST if needed
+            if self.registers.st > 0 {
+                self.registers.st -= 1;
+            }
+
+            // decrement DT if needed
+            if self.registers.dt > 0 {
+                self.registers.dt -= 1;
+            }
+
+            // reset the last decrement time
+            self.last_decrement = Instant::now();
+        }
 
         match self.get_current_instruction() {
             Sys(_) => { /* intentionally ignore */ }
@@ -365,13 +404,13 @@ impl Chip8 {
             }
             SkipIfKeyPressed(reg) => {
                 // skip the next instruction if the input specified in the register is pressed
-                if self.registers.input & (0x1 << self.registers.v[reg as usize]) > 0 {
+                if self.input.curr & (0x1 << self.registers.v[reg as usize]) > 0 {
                     self.registers.pc += 2;
                 }
             }
             SkipIfKeyNotPressed(reg) => {
                 // skip the next instruction if the input specified in the register is not pressed
-                if self.registers.input & (0x1 << self.registers.v[reg as usize]) == 0 {
+                if self.input.curr & (0x1 << self.registers.v[reg as usize]) == 0 {
                     self.registers.pc += 2;
                 }
             }
@@ -400,6 +439,22 @@ impl Chip8 {
                         self.memory.ram[self.registers.i as usize + r as usize];
                 }
             }
+            StoreKeypress(reg) => { // wait for a keypress, and store it in the given register
+                // get the input that has changed
+                let changed_inputs: u16 = self.input.curr ^ self.input.prev;
+
+                // get the inputs that have gone from 0 to 1
+                let newly_pressed_inputs: u16 = changed_inputs & self.input.curr;
+
+                if newly_pressed_inputs == 0 {
+                    // no inputs are newly pressed, so don't go to the next instruction
+                    self.registers.pc -= 2;
+                } else {
+                    // get the leftmost bit that has been newly pressed and write it to the register
+                    self.registers.v[reg as usize] = (newly_pressed_inputs as f32).log2() as u8;
+                }
+
+            }
             _ => {
                 return Err(current_opcode);
             }
@@ -407,6 +462,9 @@ impl Chip8 {
 
         // point the PC to the next instruction
         self.registers.pc += 2;
+
+        // update the previous input
+        self.input.prev = self.input.curr;
 
         Ok(current_opcode)
     }
