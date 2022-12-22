@@ -371,9 +371,9 @@ impl Chip8 {
             StoreBCD(reg) => {
                 // store BCD representation of VX in I, I+1, and I+2
                 // get the hundreds, tens, and ones places
-                let hundreds: u8 = reg / 100;
-                let tens: u8 = (reg % 100) / 10;
-                let ones: u8 = reg % 10;
+                let hundreds: u8 = self.registers.v[reg as usize] / 100;
+                let tens: u8 = (self.registers.v[reg as usize] % 100) / 10;
+                let ones: u8 = self.registers.v[reg as usize] % 10;
 
                 self.memory.ram[self.registers.i as usize] = hundreds;
                 self.memory.ram[self.registers.i as usize + 1] = tens;
