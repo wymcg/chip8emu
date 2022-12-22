@@ -2,12 +2,16 @@ pub type Address = u16;
 pub type Immediate = u8;
 pub type Register = u8;
 
+#[derive(Debug)]
 pub enum Instruction {
+    // emulator special
+    Unknown,
+
     // system
     Sys(Address),
     Cls,
     Ret,
-    Jp(Address),
+    Jump(Address),
     JumpWithOffset(Address),
     Call(Address),
 
