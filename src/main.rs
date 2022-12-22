@@ -7,7 +7,7 @@ mod input;
 mod instructions;
 mod state;
 
-const ROM_PATH: &str = "./roms/maze.ch8";
+const ROM_PATH: &str = "./roms/test_opcode.ch8";
 const FONT_PATH: &str = "./fonts/default_font.ch8";
 
 // display information
