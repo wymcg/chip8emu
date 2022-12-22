@@ -411,11 +411,13 @@ impl Chip8 {
         Ok(current_opcode)
     }
 
+    /// Get the opcode at the PC
     fn get_current_opcode(&self) -> u16 {
         ((self.memory.ram[self.registers.pc as usize] as u16) << 8)
             | (self.memory.ram[self.registers.pc as usize + 1] as u16)
     }
 
+    /// Identify the instruction at the PC
     fn get_current_instruction(&self) -> Instruction {
         // get the full opcode
         let opcode: u16 = self.get_current_opcode();
