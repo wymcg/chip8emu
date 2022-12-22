@@ -1,11 +1,12 @@
 extern crate core;
 
-use crate::state::{Chip8, DISPLAY_HEIGHT, DISPLAY_WIDTH};
+use crate::chip8::{Chip8, DISPLAY_HEIGHT, DISPLAY_WIDTH};
 use bevy::prelude::*;
 
 mod input;
 mod instructions;
-mod state;
+mod chip8;
+mod emulator;
 
 const ROM_PATH: &str = "./roms/test_opcode.ch8";
 const FONT_PATH: &str = "./fonts/default_font.ch8";
