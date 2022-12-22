@@ -381,14 +381,14 @@ impl Chip8 {
             }
             StoreRegisters(reg) => {
                 // store registers V0-VX in memory starting at I
-                for r in 0..reg {
+                for r in 0..=reg {
                     self.memory.ram[self.registers.i as usize + r as usize] =
                         self.registers.v[r as usize];
                 }
             }
             ReadRegisters(reg) => {
                 // populate registers V0-VX with data starting from I
-                for r in 0..reg {
+                for r in 0..=reg {
                     self.registers.v[r as usize] =
                         self.memory.ram[self.registers.i as usize + r as usize];
                 }
