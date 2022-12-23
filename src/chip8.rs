@@ -1,17 +1,17 @@
 use crate::input::Input;
 use crate::instructions::Instruction::*;
 use crate::instructions::{Address, Immediate, Instruction, Register};
+use bevy::utils::Instant;
 use rand::{thread_rng, Rng};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::time::Duration;
-use bevy::utils::Instant;
 
 const MEM_SIZE: usize = 4096;
 const STACK_SIZE: usize = 1024;
 const PROGMEM_START: u16 = 0x200;
 const FONTMEM_START: u16 = 0x000;
-const SIXTY_HZ_TIME: Duration = Duration::from_secs(1/60);
+const SIXTY_HZ_TIME: Duration = Duration::from_secs(1 / 60);
 
 const DEFAULT_FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -58,7 +58,6 @@ struct Registers {
     /// The stack pointer
     /// In this implementation, the stack pointer is 16 bits.
     sp: u16,
-
 }
 
 /// CHIP-8 Memory
@@ -405,8 +404,10 @@ impl Chip8 {
                 for row in 0..imm {
                     for col in 0..8 {
                         // get the new pixel state
-                        let pixel_state: bool = (self.memory.ram[self.registers.i as usize + row as usize]
-                            & (0x1 << (7-col))) > 0;
+                        let pixel_state: bool = (self.memory.ram
+                            [self.registers.i as usize + row as usize]
+                            & (0x1 << (7 - col)))
+                            > 0;
 
                         // get the x and y for this pixel
                         let x = (start_x as usize + col as usize) % DISPLAY_WIDTH;
@@ -420,7 +421,6 @@ impl Chip8 {
                             // write vram
                             self.memory.vram[y][x] = pixel_state;
                         }
-
                     }
                 }
             }
@@ -466,7 +466,8 @@ impl Chip8 {
                         self.memory.ram[self.registers.i as usize + r as usize];
                 }
             }
-            StoreKeypress(reg) => { // wait for a keypress, and store it in the given register
+            StoreKeypress(reg) => {
+                // wait for a keypress, and store it in the given register
                 // get the input that has changed
                 let changed_inputs: u16 = self.input.curr ^ self.input.prev;
 
@@ -480,7 +481,6 @@ impl Chip8 {
                     // get the leftmost bit that has been newly pressed and write it to the register
                     self.registers.v[reg as usize] = (newly_pressed_inputs as f32).log2() as u8;
                 }
-
             }
             _ => {
                 return Err(current_opcode);

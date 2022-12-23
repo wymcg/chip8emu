@@ -1,13 +1,14 @@
+mod args;
 mod startup_systems;
 mod systems;
-mod args;
+mod util;
 
 use crate::chip8::{Chip8, DISPLAY_HEIGHT, DISPLAY_WIDTH};
+use crate::emulator::args::EmulatorArgs;
 use crate::emulator::startup_systems::*;
 use crate::emulator::systems::*;
 use bevy::prelude::*;
 use clap::Parser;
-use crate::emulator::args::EmulatorArgs;
 
 // display information
 const PIXEL_SIZE: f32 = 10.0;
@@ -18,11 +19,11 @@ const WINDOW_SIZE: (f32, f32) = (640.0, 320.0);
 
 #[derive(Resource)]
 pub struct Emulator {
-    state: Chip8
+    state: Chip8,
 }
 
 #[derive(Component)]
-pub struct Coordinate{
+pub struct Coordinate {
     x: usize,
     y: usize,
 }
@@ -48,7 +49,7 @@ pub fn run_emulator() {
         .add_startup_system(pixels_setup)
         .add_system(do_next_instruction)
         .add_system(update_display)
+        .add_system(window_resize_pixel)
+        .add_system(window_resize_camera)
         .run();
 }
-
-
