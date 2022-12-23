@@ -372,7 +372,7 @@ impl Chip8 {
             ShiftLeftReg(reg) => {
                 // logical shift left by one
                 // set VF with the msb
-                self.registers.v[0xF] = self.registers.v[reg as usize] & 0x80;
+                self.registers.v[0xF] = (self.registers.v[reg as usize] & 0x80) >> 7;
 
                 // shift the register left one
                 self.registers.v[reg as usize] <<= 1;
