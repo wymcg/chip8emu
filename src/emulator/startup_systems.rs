@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use crate::emulator::util::{get_camera_translation, get_pixel_translation};
 
 /// Make the camera
-pub fn camera_setup(mut commands: Commands, args: Res<EmulatorArgs>, windows: Res<Windows>) {
+pub fn camera_setup(mut commands: Commands, windows: Res<Windows>) {
     let window = windows
         .get_primary()
         .expect("Unable to get primary window!");
@@ -34,7 +34,7 @@ pub fn emu_setup(mut commands: Commands, args: Res<EmulatorArgs>) {
 }
 
 /// Make all the pixels
-pub fn pixels_setup(mut commands: Commands, args: Res<EmulatorArgs>, windows: Res<Windows>) {
+pub fn pixels_setup(mut commands: Commands, windows: Res<Windows>) {
     let window = windows
         .get_primary()
         .expect("Unable to get primary window!");

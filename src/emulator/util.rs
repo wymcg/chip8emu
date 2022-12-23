@@ -1,6 +1,5 @@
 use bevy::math::Vec3;
 use crate::chip8::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
-use crate::emulator::Coordinate;
 
 /// Get the camera translation
 pub fn get_camera_translation(pixel_size: (f32, f32)) -> Vec3 {

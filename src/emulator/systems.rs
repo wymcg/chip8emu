@@ -1,8 +1,9 @@
-use crate::emulator::{Coordinate, Emulator, OFF_COLOR, ON_COLOR};
+use crate::emulator::{Coordinate, Emulator, KEYMAP, OFF_COLOR, ON_COLOR};
 use bevy::prelude::*;
 use bevy::window::WindowResized;
 use crate::chip8::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 use crate::emulator::util::{get_camera_translation, get_pixel_translation};
+use crate::input::Input::{Pressed, Unpressed};
 
 /// Update the display based on the emulator state
 pub fn update_display(mut pixels_query: Query<(&mut Coordinate, &mut Sprite)>, emu: Res<Emulator>) {
@@ -68,4 +69,16 @@ pub fn window_resize_camera(
         }
 
     }
+}
+
+/// Manage user input
+pub fn get_input(inputs: Res<Input<KeyCode>>, mut emu: ResMut<Emulator>) {
+    // process each keycode in the keymap
+    KEYMAP.map(|(kc, input)| {
+        if inputs.just_pressed(kc) {
+            emu.state.change_input(Pressed(input));
+        } else if inputs.just_released(kc) {
+            emu.state.change_input(Unpressed(input));
+        }
+    });
 }
