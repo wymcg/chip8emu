@@ -50,14 +50,14 @@ struct Registers {
 
     /// The 16-bit index register
     /// CHIP-8 addresses are only 12 bits wide, so only the lower 12 bits are used
-    i: u16,
+    i: usize,
 
     /// The 16-bit program counter
-    pc: u16,
+    pc: usize,
 
     /// The stack pointer
     /// In this implementation, the stack pointer is 16 bits.
-    sp: u16,
+    sp: usize,
 }
 
 /// CHIP-8 Memory
@@ -68,7 +68,7 @@ pub struct Memory {
 
     /// The stack
     /// Used mostly for addresses for subroutine calls.
-    stack: [u16; STACK_SIZE],
+    stack: [usize; STACK_SIZE],
 
     /// The display state
     /// For most modern implementations, the display is 64x32.
@@ -230,7 +230,7 @@ impl Chip8 {
                 self.registers.sp -= 1;
 
                 // set the program counter to be the newly popped address
-                self.registers.pc = self.memory.stack[self.registers.sp as usize];
+                self.registers.pc = self.memory.stack[self.registers.sp];
             }
             Jump(addr) => {
                 // jump to the given address
@@ -239,12 +239,12 @@ impl Chip8 {
             }
             JumpWithOffset(addr) => {
                 // jump to the given address, offset by the value in V0
-                self.registers.pc = addr + self.registers.v[0x0] as u16;
+                self.registers.pc = addr + self.registers.v[0x0] as usize;
             }
             Call(addr) => {
                 // call subroutine at the given address
                 // put the current PC at the top of the stack
-                self.memory.stack[self.registers.sp as usize] = self.registers.pc;
+                self.memory.stack[self.registers.sp] = self.registers.pc;
                 self.registers.sp += 1;
 
                 // replace the current PC with the given address
@@ -253,38 +253,38 @@ impl Chip8 {
             SkipEqualImm(reg, imm) => {
                 // if the contents of the given register is equal to the immediate,
                 // point the PC past the next instruction
-                if self.registers.v[reg as usize] == imm {
+                if self.registers.v[reg] == imm {
                     self.registers.pc += 2;
                 }
             }
             SkipNotEqualImm(reg, imm) => {
                 // if the contents of the given register is not equal to the immediate,
                 // point the PC past the next instruction
-                if self.registers.v[reg as usize] != imm {
+                if self.registers.v[reg] != imm {
                     self.registers.pc += 2;
                 }
             }
             SkipEqualReg(regx, regy) => {
                 // if the contents of the two registers are the same,
                 // point the PC past the next instruction
-                if self.registers.v[regx as usize] == self.registers.v[regy as usize] {
+                if self.registers.v[regx] == self.registers.v[regy] {
                     self.registers.pc += 2;
                 }
             }
             SkipNotEqualReg(regx, regy) => {
                 // if th contents of the two registers are not the same,
                 // point the PC past the next instruction
-                if self.registers.v[regx as usize] != self.registers.v[regy as usize] {
+                if self.registers.v[regx] != self.registers.v[regy] {
                     self.registers.pc += 2;
                 }
             }
             LoadImm(reg, imm) => {
                 // load an immediate value into a register
-                self.registers.v[reg as usize] = imm;
+                self.registers.v[reg] = imm;
             }
             LoadReg(regx, regy) => {
                 // load the contents of one register into another
-                self.registers.v[regx as usize] = self.registers.v[regy as usize];
+                self.registers.v[regx] = self.registers.v[regy];
             }
             LoadAddress(addr) => {
                 // load the index register with the given address
@@ -292,25 +292,25 @@ impl Chip8 {
             }
             ReadDelayTimer(reg) => {
                 // read the delay timer into a register
-                self.registers.v[reg as usize] = self.registers.dt;
+                self.registers.v[reg] = self.registers.dt;
             }
             WriteDelayTimer(reg) => {
                 // write the delay timer with the contents of a register
-                self.registers.dt = self.registers.v[reg as usize];
+                self.registers.dt = self.registers.v[reg];
             }
             WriteSoundTimer(reg) => {
                 // write the sound timer with the contents of a register
-                self.registers.st = self.registers.v[reg as usize];
+                self.registers.st = self.registers.v[reg];
             }
             AddImm(reg, imm) => {
                 // get the result
-                self.registers.v[reg as usize] = self.registers.v[reg as usize].wrapping_add(imm);
+                self.registers.v[reg] = self.registers.v[reg].wrapping_add(imm);
             }
             AddReg(regx, regy) => {
                 // add together VX and VY and put the result in VX
                 // get the result
-                let (result, overflow): (u8, bool) = self.registers.v[regx as usize]
-                    .overflowing_add(self.registers.v[regy as usize]);
+                let (result, overflow): (u8, bool) = self.registers.v[regx]
+                    .overflowing_add(self.registers.v[regy]);
 
                 // check if was an overflow and set the VF register if so
                 if overflow {
@@ -320,20 +320,20 @@ impl Chip8 {
                 }
 
                 // set VX with the result
-                self.registers.v[regx as usize] = result;
+                self.registers.v[regx] = result;
             }
             AddIndex(reg) => {
                 // add I to VX and store in I
                 self.registers.i = self
                     .registers
                     .i
-                    .wrapping_add(self.registers.v[reg as usize] as u16);
+                    .wrapping_add(self.registers.v[reg] as usize);
             }
             SubReg(regx, regy) => {
                 // subtract VY from VX and put the result in VX
                 // get the result
-                let (result, borrow): (u8, bool) = self.registers.v[regx as usize]
-                    .overflowing_sub(self.registers.v[regy as usize]);
+                let (result, borrow): (u8, bool) = self.registers.v[regx]
+                    .overflowing_sub(self.registers.v[regy]);
 
                 // set VF depending on whether not there was a borrow
                 if borrow {
@@ -343,13 +343,13 @@ impl Chip8 {
                 }
 
                 // store the result in VX
-                self.registers.v[regx as usize] = result;
+                self.registers.v[regx] = result;
             }
             SubNReg(regx, regy) => {
                 // subtract VX from VY and put the result in VY
                 // get the result
-                let (result, borrow): (u8, bool) = self.registers.v[regy as usize]
-                    .overflowing_sub(self.registers.v[regx as usize]);
+                let (result, borrow): (u8, bool) = self.registers.v[regy]
+                    .overflowing_sub(self.registers.v[regx]);
 
                 // set VF depending on whether or not there was a borrow
                 if borrow {
@@ -359,59 +359,59 @@ impl Chip8 {
                 }
 
                 // store the result in VX
-                self.registers.v[regx as usize] = result;
+                self.registers.v[regx] = result;
             }
             ShiftRightReg(reg) => {
                 // logical shift right by one
                 // set VF with the lsb
-                self.registers.v[0xF] = self.registers.v[reg as usize] & 0x01;
+                self.registers.v[0xF] = self.registers.v[reg] & 0x01;
 
                 // shift the register right 1
-                self.registers.v[reg as usize] >>= 1;
+                self.registers.v[reg] >>= 1;
             }
             ShiftLeftReg(reg) => {
                 // logical shift left by one
                 // set VF with the msb
-                self.registers.v[0xF] = (self.registers.v[reg as usize] & 0x80) >> 7;
+                self.registers.v[0xF] = (self.registers.v[reg] & 0x80) >> 7;
 
                 // shift the register left one
-                self.registers.v[reg as usize] <<= 1;
+                self.registers.v[reg] <<= 1;
             }
             OrReg(regx, regy) => {
                 // or together VX and VY and put the result in VX
-                self.registers.v[regx as usize] |= self.registers.v[regy as usize];
+                self.registers.v[regx] |= self.registers.v[regy];
             }
             AndReg(regx, regy) => {
                 // and together VX and VY and put the result in VX
-                self.registers.v[regx as usize] &= self.registers.v[regy as usize];
+                self.registers.v[regx] &= self.registers.v[regy];
             }
             XorReg(regx, regy) => {
                 // xor together VX and VY and put the result in VX
-                self.registers.v[regx as usize] ^= self.registers.v[regy as usize];
+                self.registers.v[regx] ^= self.registers.v[regy];
             }
             RandAndImmediate(reg, imm) => {
                 // generate a random value, and with imm, and store in VX
-                self.registers.v[reg as usize] = thread_rng().gen::<u8>() & imm;
+                self.registers.v[reg] = thread_rng().gen::<u8>() & imm;
             }
             Draw(regx, regy, imm) => {
                 // reset VF
                 self.registers.v[0xF] = 0x0;
 
                 // get x and y to start drawing the sprite
-                let start_x: u8 = self.registers.v[regx as usize];
-                let start_y: u8 = self.registers.v[regy as usize];
+                let start_x: usize = self.registers.v[regx] as usize;
+                let start_y: usize = self.registers.v[regy] as usize;
 
-                for row in 0..imm {
-                    for col in 0..8 {
+                for row in 0..imm as usize {
+                    for col in 0..8 as usize {
                         // get the new pixel state
                         let pixel_state: bool = (self.memory.ram
-                            [self.registers.i as usize + row as usize]
+                            [self.registers.i + row]
                             & (0x1 << (7 - col)))
                             > 0;
 
                         // get the x and y for this pixel
-                        let x = (start_x as usize + col as usize) % DISPLAY_WIDTH;
-                        let y = (start_y as usize + row as usize) % DISPLAY_HEIGHT;
+                        let x = (start_x + col) % DISPLAY_WIDTH;
+                        let y = (start_y + row) % DISPLAY_HEIGHT;
 
                         // check if the vram differs from the current pixel state (collision)
                         if self.memory.vram[y][x] != pixel_state {
@@ -426,44 +426,44 @@ impl Chip8 {
             }
             SetSpriteLoc(reg) => {
                 // set I with the sprite info for the character in reg
-                self.registers.i = self.registers.v[reg as usize] as u16 * 0x05;
+                self.registers.i = self.registers.v[reg] as usize * 0x05;
                 // each sprite is 5 bytes long
             }
             SkipIfKeyPressed(reg) => {
                 // skip the next instruction if the input specified in the register is pressed
-                if self.input.curr & (0x1 << self.registers.v[reg as usize]) > 0 {
+                if self.input.curr & (0x1 << self.registers.v[reg]) > 0 {
                     self.registers.pc += 2;
                 }
             }
             SkipIfKeyNotPressed(reg) => {
                 // skip the next instruction if the input specified in the register is not pressed
-                if self.input.curr & (0x1 << self.registers.v[reg as usize]) == 0 {
+                if self.input.curr & (0x1 << self.registers.v[reg]) == 0 {
                     self.registers.pc += 2;
                 }
             }
             StoreBCD(reg) => {
                 // store BCD representation of VX in I, I+1, and I+2
                 // get the hundreds, tens, and ones places
-                let hundreds: u8 = self.registers.v[reg as usize] / 100;
-                let tens: u8 = (self.registers.v[reg as usize] % 100) / 10;
-                let ones: u8 = self.registers.v[reg as usize] % 10;
+                let hundreds: u8 = self.registers.v[reg] / 100;
+                let tens: u8 = (self.registers.v[reg] % 100) / 10;
+                let ones: u8 = self.registers.v[reg] % 10;
 
-                self.memory.ram[self.registers.i as usize] = hundreds;
-                self.memory.ram[self.registers.i as usize + 1] = tens;
-                self.memory.ram[self.registers.i as usize + 2] = ones;
+                self.memory.ram[self.registers.i] = hundreds;
+                self.memory.ram[self.registers.i + 1] = tens;
+                self.memory.ram[self.registers.i + 2] = ones;
             }
             StoreRegisters(reg) => {
                 // store registers V0-VX in memory starting at I
-                for r in 0..=reg {
-                    self.memory.ram[self.registers.i as usize + r as usize] =
-                        self.registers.v[r as usize];
+                for r in 0..=reg as usize {
+                    self.memory.ram[self.registers.i + r] =
+                        self.registers.v[r];
                 }
             }
             ReadRegisters(reg) => {
                 // populate registers V0-VX with data starting from I
-                for r in 0..=reg {
-                    self.registers.v[r as usize] =
-                        self.memory.ram[self.registers.i as usize + r as usize];
+                for r in 0..=reg as usize {
+                    self.registers.v[r] =
+                        self.memory.ram[self.registers.i + r];
                 }
             }
             StoreKeypress(reg) => {
@@ -479,7 +479,7 @@ impl Chip8 {
                     self.registers.pc -= 2;
                 } else {
                     // get the leftmost bit that has been newly pressed and write it to the register
-                    self.registers.v[reg as usize] = (newly_pressed_inputs as f32).log2() as u8;
+                    self.registers.v[reg] = (newly_pressed_inputs as f32).log2() as u8;
                 }
             }
             _ => {
@@ -498,8 +498,8 @@ impl Chip8 {
 
     /// Get the opcode at the PC
     fn get_current_opcode(&self) -> u16 {
-        ((self.memory.ram[self.registers.pc as usize] as u16) << 8)
-            | (self.memory.ram[self.registers.pc as usize + 1] as u16)
+        ((self.memory.ram[self.registers.pc] as u16) << 8)
+            | (self.memory.ram[self.registers.pc + 1] as u16)
     }
 
     /// Identify the instruction at the PC
@@ -509,11 +509,11 @@ impl Chip8 {
 
         // get the opcode components
         let inst_word: u8 = ((opcode & 0xF000) >> 12) as u8;
-        let addr: Address = opcode & 0x0FFF;
+        let addr: usize = (opcode & 0x0FFF) as usize;
         let nibble: u8 = (opcode & 0x000F) as u8;
         let imm: Immediate = (opcode & 0x00FF) as u8;
-        let regx: Register = ((opcode & 0x0F00) >> 8) as u8;
-        let regy: Register = ((opcode & 0x00F0) >> 4) as u8;
+        let regx: Register = ((opcode & 0x0F00) >> 8) as usize;
+        let regy: Register = ((opcode & 0x00F0) >> 4) as usize;
 
         // use the components to make the instruction to return
         match inst_word {

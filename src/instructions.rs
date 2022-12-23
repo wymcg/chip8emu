@@ -1,6 +1,6 @@
-pub type Address = u16;
+pub type Address = usize;
 pub type Immediate = u8;
-pub type Register = u8;
+pub type Register = usize;
 
 #[derive(Debug)]
 pub enum Instruction {
