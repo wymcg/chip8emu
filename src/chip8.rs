@@ -13,6 +13,25 @@ const PROGMEM_START: u16 = 0x200;
 const FONTMEM_START: u16 = 0x000;
 const SIXTY_HZ_TIME: Duration = Duration::from_secs(1/60);
 
+const DEFAULT_FONT: [u8; 80] = [
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80, // F
+];
+
 pub const DISPLAY_WIDTH: usize = 64;
 pub const DISPLAY_HEIGHT: usize = 32;
 
@@ -102,7 +121,7 @@ impl Chip8 {
     }
 
     /// Load a rom into memory
-    pub fn load_rom(mut self, path: &str) -> Self {
+    pub fn load_rom(mut self, path: String) -> Self {
         // open the file
         let file: File = File::open(path).expect("Unable to open ROM file!");
 
@@ -121,18 +140,26 @@ impl Chip8 {
         self
     }
 
-    pub fn load_font(mut self, path: &str) -> Self {
-        // open the file
-        let file: File = File::open(path).expect("Unable to open font file!");
-
+    pub fn load_font(mut self, path: Option<String>) -> Self {
         // make the vec to hold the bytes
         let mut bytes: Vec<u8> = Vec::new();
 
-        // read the file into the bytes vector
-        BufReader::new(file)
-            .read_to_end(&mut bytes)
-            .expect("Unable to read file!");
+        match path {
+            None => {
+                bytes = DEFAULT_FONT.to_vec();
+            }
+            Some(path) => {
+                // open the file
+                let file: File = File::open(path).expect("Unable to open font file!");
 
+                // read the file into the bytes vector
+                BufReader::new(file)
+                    .read_to_end(&mut bytes)
+                    .expect("Unable to read file!");
+            }
+        }
+
+        // load the font into memory
         for i in 0..bytes.len() {
             self.memory.ram[FONTMEM_START as usize + i] = bytes[i];
         }
