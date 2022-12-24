@@ -78,6 +78,7 @@ pub struct Memory {
 pub struct InputState {
     curr: u16,
     prev: u16,
+    key_just_released: bool,
 }
 
 pub struct Chip8 {
@@ -114,6 +115,7 @@ impl Chip8 {
             input: InputState {
                 curr: 0b0000_0000_0000_0000,
                 prev: 0b0000_0000_0000_0000,
+                key_just_released: false,
             },
             last_decrement: Instant::now(),
         }
@@ -187,7 +189,8 @@ impl Chip8 {
                 self.input.curr |= 0x1 << key; // set the n-th bit to 1
             }
             Input::Unpressed(key) => {
-                self.input.curr &= !(0x1 << key) // set the n-th bit to 0
+                self.input.curr &= !(0x1 << key); // set the n-th bit to 0
+                self.input.key_just_released = true;
             }
         }
     }
@@ -467,20 +470,22 @@ impl Chip8 {
                 }
             }
             StoreKeypress(reg) => {
-                // wait for a keypress, and store it in the given register
-                // get the input that has changed
-                let changed_inputs: u16 = self.input.curr ^ self.input.prev;
+                // only store the keypress once it is released
+                if self.input.key_just_released {
+                    // get the inputs that have changed
+                    let changed_inputs: u16 = self.input.curr ^ self.input.prev;
 
-                // get the inputs that have gone from 0 to 1
-                let newly_pressed_inputs: u16 = changed_inputs & self.input.curr;
+                    // get the inputs that have just been released
+                    let released_inputs: u16 = changed_inputs & !self.input.curr;
 
-                if newly_pressed_inputs == 0 {
-                    // no inputs are newly pressed, so don't go to the next instruction
-                    self.registers.pc -= 2;
+                    // set the given input to be the greatest input that was just released
+                    self.registers.v[reg] = (released_inputs as f32).log2() as u8;
+
                 } else {
-                    // get the leftmost bit that has been newly pressed and write it to the register
-                    self.registers.v[reg] = (newly_pressed_inputs as f32).log2() as u8;
+                    // counteract the PC increment that comes later
+                    self.registers.pc -= 2;
                 }
+
             }
             _ => {
                 return Err(current_opcode);
@@ -490,8 +495,8 @@ impl Chip8 {
         // point the PC to the next instruction
         self.registers.pc += 2;
 
-        // update the previous input
-        self.input.prev = self.input.curr;
+        // reset the key release flag
+        self.input.key_just_released = false;
 
         Ok(current_opcode)
     }
