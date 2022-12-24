@@ -406,15 +406,20 @@ impl Chip8 {
 
                 for row in 0..imm as usize {
                     for col in 0..8 as usize {
+                        // get the x and y for this pixel
+                        let x = start_x + col;
+                        let y = start_y + row;
+
+                        // do not draw if the pixel is out of bounds
+                        if x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT {
+                            continue;
+                        }
+
                         // get the new pixel state
                         let pixel_state: bool = (self.memory.ram
                             [self.registers.i + row]
                             & (0x1 << (7 - col)))
                             > 0;
-
-                        // get the x and y for this pixel
-                        let x = (start_x + col) % DISPLAY_WIDTH;
-                        let y = (start_y + row) % DISPLAY_HEIGHT;
 
                         // check if the vram differs from the current pixel state (collision)
                         if self.memory.vram[y][x] != pixel_state {
