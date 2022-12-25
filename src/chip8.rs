@@ -413,33 +413,35 @@ impl Chip8 {
                 self.registers.v[0xF] = 0x0;
 
                 // get x and y to start drawing the sprite
-                let start_x: usize = self.registers.v[regx] as usize;
-                let start_y: usize = self.registers.v[regy] as usize;
+                let start_x: usize = self.registers.v[regx] as usize % DISPLAY_WIDTH;
+                let start_y: usize = self.registers.v[regy] as usize % DISPLAY_HEIGHT;
 
                 for row in 0..imm as usize {
                     for col in 0..8 as usize {
-                        // get the x and y for this pixel
-                        let x = start_x + col;
-                        let y = start_y + row;
-
-                        // do not draw if the pixel is out of bounds
-                        if x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT {
-                            continue;
-                        }
-
-                        // get the new pixel state
+                        // get this pixel in the sprite
                         let pixel_state: bool = (self.memory.ram
                             [self.registers.i + row]
                             & (0x1 << (7 - col)))
                             > 0;
 
-                        // check if the vram differs from the current pixel state (collision)
-                        if self.memory.vram[y][x] != pixel_state {
-                            // set the VF register
-                            self.registers.v[0xF] = 0x1;
+                        // only attempt to change this sprite if this bit is set
+                        if pixel_state {
+                            // get the x and y for this pixel
+                            let x = start_x + col;
+                            let y = start_y + row;
+
+                            // do not draw this pixel if it goes off the side of the screen
+                            if x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT {
+                                continue;
+                            }
+
+                            // set the collision flag if this coord is already set
+                            if self.memory.vram[y][x] {
+                                self.registers.v[0xF] = 0x1;
+                            }
 
                             // write vram
-                            self.memory.vram[y][x] = pixel_state;
+                            self.memory.vram[y][x] ^= pixel_state;
                         }
                     }
                 }
