@@ -383,18 +383,30 @@ impl Chip8 {
             OrReg(regx, regy) => {
                 // or together VX and VY and put the result in VX
                 self.registers.v[regx] |= self.registers.v[regy];
+
+                // reset the VF flag
+                self.registers.v[0xF] = 0x00;
             }
             AndReg(regx, regy) => {
                 // and together VX and VY and put the result in VX
                 self.registers.v[regx] &= self.registers.v[regy];
+
+                // reset the VF flag
+                self.registers.v[0xF] = 0x00;
             }
             XorReg(regx, regy) => {
                 // xor together VX and VY and put the result in VX
                 self.registers.v[regx] ^= self.registers.v[regy];
+
+                // reset the VF flag
+                self.registers.v[0xF] = 0x00;
             }
             RandAndImmediate(reg, imm) => {
                 // generate a random value, and with imm, and store in VX
                 self.registers.v[reg] = thread_rng().gen::<u8>() & imm;
+
+                // reset the VF flag
+                self.registers.v[0xF] = 0x00;
             }
             Draw(regx, regy, imm) => {
                 // reset VF
