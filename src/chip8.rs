@@ -90,9 +90,6 @@ pub struct Chip8 {
 
     /// The current inputs, and the previous state of the input at the last cycle
     input: InputState,
-
-    /// The time at the last time the timers were incremented
-    last_decrement: Instant,
 }
 
 impl Chip8 {
@@ -117,7 +114,6 @@ impl Chip8 {
                 prev: 0b0000_0000_0000_0000,
                 key_just_released: false,
             },
-            last_decrement: Instant::now(),
         }
     }
 
@@ -174,7 +170,18 @@ impl Chip8 {
     }
 
     /// Get the display state
-    pub fn get_display(&self) -> &[[bool; DISPLAY_WIDTH]; DISPLAY_HEIGHT] {
+    /// It is assumed that this is called 60 times a second
+    pub fn do_frame(&mut self) -> &[[bool; DISPLAY_WIDTH]; DISPLAY_HEIGHT] {
+        // decrement ST if needed
+        if self.registers.st > 0 {
+            self.registers.st -= 1;
+        }
+
+        // decrement DT if needed
+        if self.registers.dt > 0 {
+            self.registers.dt -= 1;
+        }
+
         &self.memory.vram
     }
 
@@ -196,25 +203,11 @@ impl Chip8 {
     }
 
     /// Do the next instruction and return the result, containing the opcode that was just dealt with
+    /// This should be called about 500 times a second
+    /// Or, a little under 9 times per call to do_frame()
     pub fn do_next_instruction(&mut self) -> Result<u16, u16> {
         // get the current opcode for returning results
         let current_opcode: u16 = self.get_current_opcode();
-
-        // decrement the timers, if enough time has passed since the last decrement
-        if self.last_decrement.elapsed() > SIXTY_HZ_TIME {
-            // decrement ST if needed
-            if self.registers.st > 0 {
-                self.registers.st -= 1;
-            }
-
-            // decrement DT if needed
-            if self.registers.dt > 0 {
-                self.registers.dt -= 1;
-            }
-
-            // reset the last decrement time
-            self.last_decrement = Instant::now();
-        }
 
         match self.get_current_instruction() {
             Sys(_) => { /* intentionally ignore */ }
