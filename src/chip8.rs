@@ -1,17 +1,14 @@
 use crate::input::Input;
 use crate::instructions::Instruction::*;
-use crate::instructions::{Address, Immediate, Instruction, Register};
-use bevy::utils::Instant;
+use crate::instructions::{Immediate, Instruction, Register};
 use rand::{thread_rng, Rng};
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::time::Duration;
 
 const MEM_SIZE: usize = 4096;
 const STACK_SIZE: usize = 1024;
 const PROGMEM_START: u16 = 0x200;
 const FONTMEM_START: u16 = 0x000;
-const SIXTY_HZ_TIME: Duration = Duration::from_secs(1 / 60);
 
 const DEFAULT_FONT: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
