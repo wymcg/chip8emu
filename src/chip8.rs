@@ -478,6 +478,9 @@ impl Chip8 {
                     self.memory.ram[self.registers.i + r] =
                         self.registers.v[r];
                 }
+
+                // increment I
+                self.registers.i += reg + 1;
             }
             ReadRegisters(reg) => {
                 // populate registers V0-VX with data starting from I
@@ -485,6 +488,9 @@ impl Chip8 {
                     self.registers.v[r] =
                         self.memory.ram[self.registers.i + r];
                 }
+
+                // increment I
+                self.registers.i += reg + 1;
             }
             StoreKeypress(reg) => {
                 // only store the keypress once it is released
