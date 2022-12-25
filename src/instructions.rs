@@ -41,8 +41,8 @@ pub enum Instruction {
     OrReg(Register, Register),
     AndReg(Register, Register),
     XorReg(Register, Register),
-    ShiftRightReg(Register),
-    ShiftLeftReg(Register),
+    ShiftRightReg(Register, Register),
+    ShiftLeftReg(Register, Register),
 
     // special
     RandAndImmediate(Register, Immediate),

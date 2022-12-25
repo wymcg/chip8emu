@@ -357,22 +357,28 @@ impl Chip8 {
                 // store the result in VX
                 self.registers.v[regx] = result;
             }
-            ShiftRightReg(reg) => {
+            ShiftRightReg(regx, regy) => {
+                // put the value of VY into VX
+                self.registers.v[regx] = self.registers.v[regy];
+
                 // get the lsb
-                let lsb = self.registers.v[reg] & 0x01;
+                let lsb = self.registers.v[regx] & 0x01;
 
                 // shift the register right 1
-                self.registers.v[reg] >>= 1;
+                self.registers.v[regx] >>= 1;
 
                 // set VF with the lsb
                 self.registers.v[0xF] = lsb;
             }
-            ShiftLeftReg(reg) => {
+            ShiftLeftReg(regx, regy) => {
+                // put the value of VY into VX
+                self.registers.v[regx] = self.registers.v[regy];
+
                 // get the msb
-                let msb = (self.registers.v[reg] & 0x80) >> 7;
+                let msb = (self.registers.v[regx] & 0x80) >> 7;
 
                 // shift the register left one
-                self.registers.v[reg] <<= 1;
+                self.registers.v[regx] <<= 1;
 
                 // set VF with the msb
                 self.registers.v[0xF] = msb;
@@ -589,9 +595,9 @@ impl Chip8 {
                     0x3 => XorReg(regx, regy),
                     0x4 => AddReg(regx, regy),
                     0x5 => SubReg(regx, regy),
-                    0x6 => ShiftRightReg(regx),
+                    0x6 => ShiftRightReg(regx, regy),
                     0x7 => SubNReg(regx, regy),
-                    0xE => ShiftLeftReg(regx),
+                    0xE => ShiftLeftReg(regx, regy),
                     _ => Unknown,
                 }
             }
